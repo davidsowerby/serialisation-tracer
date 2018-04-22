@@ -22,7 +22,7 @@ class SerializationTracer {
         results = mutableMapOf()
         processedObjects = mutableListOf()
 
-        processFieldValue(target.javaClass.simpleName, target)
+        processInitialValue(target)
 
     }
 
@@ -59,22 +59,31 @@ class SerializationTracer {
         return results.filter({ (k, v) -> outcomes.contains(v.outcome) })
     }
 
-    fun processFieldValue(fieldPath: String, fieldValue: Any) {
+    private fun processInitialValue(x: Any) {
+        addToProcessedList(x)
+        trySerialisation(x.javaClass.simpleName, x)
+        drilldown(x.javaClass.simpleName, x)
+    }
+
+    private fun drilldown(fieldPath: String, fieldValue: Any) {
+        val targetClass = fieldValue.javaClass
+        val fields = FieldUtils.getAllFields(targetClass)
+
+        for (field in fields) {
+            if (!excluded(fieldPath, field, fieldValue)) {
+                processFieldValue("$fieldPath.${field.name}", fieldValue(field, fieldValue), field)
+            }
+        }
+    }
+
+    fun processFieldValue(fieldPath: String, fieldValue: Any, field: Field) {
         if (isProcessed(fieldValue)) {
             // duplicate - what should be done here?
         } else {
             addToProcessedList(fieldValue)// add early, object could refer to itself
 
-            trySerialisation(fieldPath, fieldValue)
-            val targetClass = fieldValue.javaClass
-            val fields = FieldUtils.getAllFields(targetClass)
-
-            for (field in fields) {
-                if (!excluded(fieldPath, field, fieldValue)) {
-                    processFieldValue("$fieldPath.${field.name}", fieldValue(field, fieldValue))
-                }
-            }
-
+            trySerialisation(fieldPath, fieldValue, field)
+            drilldown(fieldPath, fieldValue)
         }
     }
 
@@ -100,12 +109,20 @@ class SerializationTracer {
         return x::class.javaPrimitiveType != null
     }
 
-    private fun trySerialisation(fieldPath: String, fieldValue: Any): SerializationResult {
+    private fun trySerialisation(fieldPath: String, fieldValue: Any, field: Field? = null): SerializationResult {
         var result: SerializationResult
         try {
             val output = SerializationUtils.serialize(fieldValue as Serializable)
             SerializationUtils.deserialize<Any>(output)
-            result = SerializationResult(PASS)
+            result = if (fieldValue is Collection<*> && fieldValue.isEmpty()) {
+                if (field != null) {
+                    staticAnalysis(field, true)
+                } else {
+                    SerializationResult(PASS)
+                }
+            } else {
+                SerializationResult(PASS)
+            }
         } catch (e: Exception) {
             result = SerializationResult(FAIL, e.message ?: "")
         }
@@ -159,9 +176,13 @@ class SerializationTracer {
      *
      * @return SerializationOutcome of [PASS] if field and its generics are [Serializable], otherwise [NULL_FAILED_STATIC_ANALYSIS]
      */
-    private fun staticAnalysis(field: Field): SerializationResult {
+    private fun staticAnalysis(field: Field, emptyCollection: Boolean = false): SerializationResult {
         val buf = StringBuilder()
-        var outcome = SerializationOutcome.NULL_PASSED_STATIC_ANALYSIS
+        var outcome = if (emptyCollection) {
+            SerializationOutcome.EMPTY_PASSED_STATIC_ANALYSIS
+        } else {
+            SerializationOutcome.NULL_PASSED_STATIC_ANALYSIS
+        }
         val clazz = field.type
         if (Serializable::class.java.isAssignableFrom(clazz)) {
             buf.append("${clazz.simpleName} is Serializable.")
@@ -172,7 +193,11 @@ class SerializationTracer {
                         buf.append(" ${t.simpleName} is Serializable.")
                     } else {
                         buf.append(" ${t.simpleName} is NOT Serializable.")
-                        outcome = NULL_FAILED_STATIC_ANALYSIS
+                        outcome = if (emptyCollection) {
+                            EMPTY_FAILED_STATIC_ANALYSIS
+                        } else {
+                            NULL_FAILED_STATIC_ANALYSIS
+                        }
                     }
                 }
             }
@@ -182,7 +207,7 @@ class SerializationTracer {
 }
 
 enum class SerializationOutcome {
-    PASS, FAIL, TRANSIENT, NULL_PASSED_STATIC_ANALYSIS, STATIC_FIELD, NULL_FAILED_STATIC_ANALYSIS
+    PASS, FAIL, TRANSIENT, NULL_PASSED_STATIC_ANALYSIS, STATIC_FIELD, NULL_FAILED_STATIC_ANALYSIS, EMPTY_PASSED_STATIC_ANALYSIS, EMPTY_FAILED_STATIC_ANALYSIS
 }
 
 data class SerializationResult(val outcome: SerializationOutcome, val info: String = "")

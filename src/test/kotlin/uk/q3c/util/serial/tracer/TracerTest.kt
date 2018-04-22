@@ -6,8 +6,7 @@ import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.given
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
-import uk.q3c.util.serial.tracer.SerializationOutcome.FAIL
-import uk.q3c.util.serial.tracer.SerializationOutcome.PASS
+import uk.q3c.util.serial.tracer.SerializationOutcome.*
 import java.io.ByteArrayOutputStream
 import java.io.ObjectOutputStream
 import java.io.Serializable
@@ -35,21 +34,21 @@ object TracerTest : Spek({
                 tracer.results["StandardTestObject.arrayListOfSerializableObject"]?.outcome.shouldBe(PASS)
                 tracer.results["StandardTestObject.arrayListOfSerializableObject"]?.info.shouldEqual("")
 
-                tracer.results["StandardTestObject.emptyArrayListOfSerializableObject"]?.outcome.shouldBe(PASS)
-                tracer.results["StandardTestObject.emptyArrayListOfSerializableObject"]?.info.shouldEqual("")
+                tracer.results["StandardTestObject.emptyArrayListOfSerializableObject"]?.outcome.shouldBe(EMPTY_PASSED_STATIC_ANALYSIS)
+                tracer.results["StandardTestObject.emptyArrayListOfSerializableObject"]?.info.shouldEqual("ArrayList is Serializable. SerializableObject is Serializable.")
 
-                tracer.results["StandardTestObject.nullArrayListOfSerializableObject"]?.outcome.shouldBe(SerializationOutcome.NULL_PASSED_STATIC_ANALYSIS)
+                tracer.results["StandardTestObject.nullArrayListOfSerializableObject"]?.outcome.shouldBe(NULL_PASSED_STATIC_ANALYSIS)
                 tracer.results["StandardTestObject.nullArrayListOfSerializableObject"]?.info.shouldEqual("ArrayList is Serializable. SerializableObject is Serializable.")
 
 
                 tracer.results["StandardTestObject.arrayListOfNonSerializableObject"]?.outcome.shouldBe(FAIL)
                 tracer.results["StandardTestObject.arrayListOfNonSerializableObject"]?.info.shouldEqual("java.io.NotSerializableException: uk.q3c.util.serial.tracer.NonSerializableObject")
 
-                tracer.results["StandardTestObject.emptyArrayListOfNonSerializableObject"]?.outcome.shouldBe(FAIL)
-                tracer.results["StandardTestObject.emptyArrayListOfNonSerializableObject"]?.info.shouldEqual("java.io.NotSerializableException: uk.q3c.util.serial.tracer.NonSerializableObject")
+                tracer.results["StandardTestObject.emptyArrayListOfNonSerializableObject"]?.outcome.shouldBe(EMPTY_FAILED_STATIC_ANALYSIS)
+                tracer.results["StandardTestObject.emptyArrayListOfNonSerializableObject"]?.info.shouldEqual("ArrayList is Serializable. NonSerializableObject is NOT Serializable.")
 
-                tracer.results["StandardTestObject.nullArrayListOfNonSerializableObject"]?.outcome.shouldBe(SerializationOutcome.NULL_PASSED_STATIC_ANALYSIS)
-                tracer.results["StandardTestObject.nullArrayListOfNonSerializableObject"]?.info.shouldEqual("")
+                tracer.results["StandardTestObject.nullArrayListOfNonSerializableObject"]?.outcome.shouldBe(NULL_FAILED_STATIC_ANALYSIS)
+                tracer.results["StandardTestObject.nullArrayListOfNonSerializableObject"]?.info.shouldEqual("ArrayList is Serializable. NonSerializableObject is NOT Serializable.")
 
             }
         }

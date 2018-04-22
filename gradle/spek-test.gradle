@@ -1,0 +1,11 @@
+dependencies{
+    testCompile "com.nhaarman:mockito-kotlin:1.5.0"
+    testCompile "org.amshove.kluent:kluent:1.35"
+    testCompile ('org.jetbrains.spek:spek-api:1.1.5'){
+        exclude group: 'org.jetbrains.kotlin'
+    }
+    testRuntime ('org.jetbrains.spek:spek-junit-platform-engine:1.1.5'){
+        exclude group: 'org.junit.platform'
+        exclude group: 'org.jetbrains.kotlin'
+    }
+}

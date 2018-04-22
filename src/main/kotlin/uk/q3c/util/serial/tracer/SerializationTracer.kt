@@ -12,7 +12,7 @@ import java.lang.reflect.ParameterizedType
  * Created by David Sowerby on 19 Apr 2018
  */
 class SerializationTracer {
-    var processedObjects: MutableList<Any> = mutableListOf()
+    private var processedObjects: MutableList<Any> = mutableListOf()
 
 
     var results: MutableMap<String, SerializationResult> = mutableMapOf()
@@ -97,6 +97,13 @@ class SerializationTracer {
         if (isPrimitive(x)) {
             return true
         }
+
+        // we cannot rely on comparisons for empty lists - as far as I can see, Kotlin uses an EmptyList internally,
+        // which gets re-used - which means the comparison operator gives the wrong result
+        // this can not make the trace cyclic as the list is empty
+        if (x is Collection<*> && x.isEmpty()) {
+            return false
+        }
         for (a in processedObjects) {
             if (a === x) {
                 return true
@@ -116,7 +123,7 @@ class SerializationTracer {
             SerializationUtils.deserialize<Any>(output)
             result = if (fieldValue is Collection<*> && fieldValue.isEmpty()) {
                 if (field != null) {
-                    staticAnalysis(field, true)
+                    emptyCollectionStaticAnalysis(field, fieldValue)
                 } else {
                     SerializationResult(PASS)
                 }
@@ -164,44 +171,65 @@ class SerializationTracer {
     private fun fieldIsNull(fieldPath: String, field: Field, target: Any): Boolean {
         field.isAccessible = true
         if (field.get(target) == null) {
-            val staticAnalysisResult = staticAnalysis(field)
+            val staticAnalysisResult = nullStaticAnalysis(field)
             results["$fieldPath.${field.name}"] = staticAnalysisResult
             return true
         }
         return false
     }
 
+    private fun staticPass(isEmptyCollection: Boolean): SerializationOutcome {
+        return if (isEmptyCollection) {
+            SerializationOutcome.EMPTY_PASSED_STATIC_ANALYSIS
+        } else {
+            SerializationOutcome.NULL_PASSED_STATIC_ANALYSIS
+        }
+    }
+
+    private fun staticFail(isEmptyCollection: Boolean): SerializationOutcome {
+        return if (isEmptyCollection) {
+            SerializationOutcome.EMPTY_FAILED_STATIC_ANALYSIS
+        } else {
+            SerializationOutcome.NULL_FAILED_STATIC_ANALYSIS
+        }
+    }
+
+    private fun nullStaticAnalysis(field: Field): SerializationResult {
+        return staticAnalysis(field.type, field, false)
+    }
+
+    private fun emptyCollectionStaticAnalysis(field: Field, fieldValue: Any): SerializationResult {
+        return staticAnalysis(fieldValue.javaClass, field, true)
+    }
+
+
     /**
      * Checks [clazz] to ensure it implements [Serializable].  If [clazz] is genericised,  it also checks generic parameters to ensure they are also [Serializable]
      *
      * @return SerializationOutcome of [PASS] if field and its generics are [Serializable], otherwise [NULL_FAILED_STATIC_ANALYSIS]
      */
-    private fun staticAnalysis(field: Field, emptyCollection: Boolean = false): SerializationResult {
+    private fun staticAnalysis(clazz: Class<*>, field: Field, emptyCollection: Boolean): SerializationResult {
         val buf = StringBuilder()
-        var outcome = if (emptyCollection) {
-            SerializationOutcome.EMPTY_PASSED_STATIC_ANALYSIS
-        } else {
-            SerializationOutcome.NULL_PASSED_STATIC_ANALYSIS
-        }
-        val clazz = field.type
+        var outcome = staticPass(emptyCollection)
         if (Serializable::class.java.isAssignableFrom(clazz)) {
             buf.append("${clazz.simpleName} is Serializable.")
-            val genericType = field.genericType
-            if (genericType != null && genericType is ParameterizedType) {
-                genericType.actualTypeArguments.forEach { t ->
-                    if (Serializable::class.java.isAssignableFrom(t as Class<*>)) {
-                        buf.append(" ${t.simpleName} is Serializable.")
-                    } else {
-                        buf.append(" ${t.simpleName} is NOT Serializable.")
-                        outcome = if (emptyCollection) {
-                            EMPTY_FAILED_STATIC_ANALYSIS
-                        } else {
-                            NULL_FAILED_STATIC_ANALYSIS
-                        }
-                    }
+        } else {
+            buf.append("${clazz.simpleName} is NOT Serializable.")
+            outcome = staticFail(emptyCollection)
+        }
+
+        val genericType = field.genericType
+        if (genericType != null && genericType is ParameterizedType) {
+            genericType.actualTypeArguments.forEach { t ->
+                if (Serializable::class.java.isAssignableFrom(t as Class<*>)) {
+                    buf.append(" ${t.simpleName} is Serializable.")
+                } else {
+                    buf.append(" ${t.simpleName} is NOT Serializable.")
+                    outcome = staticFail(emptyCollection)
                 }
             }
         }
+
         return SerializationResult(outcome, buf.toString())
     }
 }

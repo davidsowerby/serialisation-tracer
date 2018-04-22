@@ -40,15 +40,35 @@ object TracerTest : Spek({
                 tracer.results["StandardTestObject.nullArrayListOfSerializableObject"]?.outcome.shouldBe(NULL_PASSED_STATIC_ANALYSIS)
                 tracer.results["StandardTestObject.nullArrayListOfSerializableObject"]?.info.shouldEqual("ArrayList is Serializable. SerializableObject is Serializable.")
 
+                // field is interface
 
-                tracer.results["StandardTestObject.arrayListOfNonSerializableObject"]?.outcome.shouldBe(FAIL)
-                tracer.results["StandardTestObject.arrayListOfNonSerializableObject"]?.info.shouldEqual("java.io.NotSerializableException: uk.q3c.util.serial.tracer.NonSerializableObject")
+                tracer.results["StandardTestObject.listOfNonSerializableObject"]?.outcome.shouldBe(FAIL)
+                tracer.results["StandardTestObject.listOfNonSerializableObject"]?.info.shouldEqual("java.io.NotSerializableException: uk.q3c.util.serial.tracer.NonSerializableObject")
 
-                tracer.results["StandardTestObject.emptyArrayListOfNonSerializableObject"]?.outcome.shouldBe(EMPTY_FAILED_STATIC_ANALYSIS)
-                tracer.results["StandardTestObject.emptyArrayListOfNonSerializableObject"]?.info.shouldEqual("ArrayList is Serializable. NonSerializableObject is NOT Serializable.")
+                tracer.results["StandardTestObject.emptyListOfNonSerializableObject"]?.outcome.shouldBe(EMPTY_FAILED_STATIC_ANALYSIS)
+                tracer.results["StandardTestObject.emptyListOfNonSerializableObject"]?.info.shouldEqual("EmptyList is Serializable. NonSerializableObject is NOT Serializable.")
 
-                tracer.results["StandardTestObject.nullArrayListOfNonSerializableObject"]?.outcome.shouldBe(NULL_FAILED_STATIC_ANALYSIS)
-                tracer.results["StandardTestObject.nullArrayListOfNonSerializableObject"]?.info.shouldEqual("ArrayList is Serializable. NonSerializableObject is NOT Serializable.")
+                tracer.results["StandardTestObject.nullListOfNonSerializableObject"]?.outcome.shouldBe(NULL_FAILED_STATIC_ANALYSIS)
+                tracer.results["StandardTestObject.nullListOfNonSerializableObject"]?.info.shouldEqual("List is NOT Serializable. NonSerializableObject is NOT Serializable.")
+
+                tracer.results["StandardTestObject.listOfSerializableObject"]?.outcome.shouldBe(PASS)
+                tracer.results["StandardTestObject.listOfSerializableObject"]?.info.shouldEqual("")
+
+                tracer.results["StandardTestObject.emptyListOfSerializableObject"]?.outcome.shouldBe(EMPTY_PASSED_STATIC_ANALYSIS)
+                tracer.results["StandardTestObject.emptyListOfSerializableObject"]?.info.shouldEqual("EmptyList is Serializable. SerializableObject is Serializable.")
+
+                tracer.results["StandardTestObject.nullListOfSerializableObject"]?.outcome.shouldBe(NULL_FAILED_STATIC_ANALYSIS)
+                tracer.results["StandardTestObject.nullListOfSerializableObject"]?.info.shouldEqual("List is NOT Serializable. SerializableObject is Serializable.")
+
+
+                tracer.results["StandardTestObject.listOfNonSerializableObject"]?.outcome.shouldBe(FAIL)
+                tracer.results["StandardTestObject.listOfNonSerializableObject"]?.info.shouldEqual("java.io.NotSerializableException: uk.q3c.util.serial.tracer.NonSerializableObject")
+
+                tracer.results["StandardTestObject.emptyListOfNonSerializableObject"]?.outcome.shouldBe(EMPTY_FAILED_STATIC_ANALYSIS)
+                tracer.results["StandardTestObject.emptyListOfNonSerializableObject"]?.info.shouldEqual("EmptyList is Serializable. NonSerializableObject is NOT Serializable.")
+
+                tracer.results["StandardTestObject.nullListOfNonSerializableObject"]?.outcome.shouldBe(NULL_FAILED_STATIC_ANALYSIS)
+                tracer.results["StandardTestObject.nullListOfNonSerializableObject"]?.info.shouldEqual("List is NOT Serializable. NonSerializableObject is NOT Serializable.")
 
             }
         }
@@ -66,9 +86,18 @@ private class StandardTestObject(
         val nullArrayListOfSerializableObject: ArrayList<SerializableObject>? = null,
 
 
-        val arrayListOfNonSerializableObject: ArrayList<NonSerializableObject> = arrayListOf(NonSerializableObject(5)), // fails correctly
-        val emptyArrayListOfNonSerializableObject: ArrayList<NonSerializableObject> = arrayListOf(), // pass, but shouldn't
-        val nullArrayListOfNonSerializableObject: ArrayList<NonSerializableObject>? = null // pass, but shouldn't
+        val arrayListOfNonSerializableObject: ArrayList<NonSerializableObject> = arrayListOf(NonSerializableObject(6)),
+        val emptyArrayListOfNonSerializableObject: ArrayList<NonSerializableObject> = arrayListOf(),
+        val nullArrayListOfNonSerializableObject: ArrayList<NonSerializableObject>? = null,
+
+        val listOfSerializableObject: List<SerializableObject> = listOf(SerializableObject(7)),
+        val emptyListOfSerializableObject: List<SerializableObject> = listOf(),
+        val nullListOfSerializableObject: List<SerializableObject>? = null,
+
+
+        val listOfNonSerializableObject: List<NonSerializableObject> = listOf(NonSerializableObject(8)),
+        val emptyListOfNonSerializableObject: List<NonSerializableObject> = listOf(),
+        val nullListOfNonSerializableObject: List<NonSerializableObject>? = null 
 
 
 ) : Serializable

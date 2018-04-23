@@ -1,5 +1,7 @@
 # Serialisation Tracer
 
+[ ![Download](https://api.bintray.com/packages/dsowerby/maven/serialisation-tracer/images/download.svg) ](https://bintray.com/dsowerby/maven/serialisation-tracer/_latestVersion)
+
 When you try to serialise a fairly complex object graph, it is not unusual to get `SerializationException`s which can be really hard to track down.
 
 This utility provides an output which identifies the exact source of a Serialization failure, for example:
@@ -17,6 +19,24 @@ This utility uses dynamic analysis (by testing field values) when they are prese
 
 There are a number of methods available to query the output, including methods which generate an `AssertionError` to use with test frameworks.
 
+## Download
+
+### Gradle
+
+```
+compile 'uk.q3c.util:serialisation-tracer:0.1.0.0'
+```
+
+### Maven
+```
+<dependency>
+  <groupId>uk.q3c.util</groupId>
+  <artifactId>serialisation-tracer</artifactId>
+  <version>0.1.0.0</version>
+  <type>pom</type>
+</dependency>
+
+```
 
 
 ## What it does

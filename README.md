@@ -130,7 +130,7 @@ Spock expects a 'false' to be returned for a test failure.  Use the `hasNo` meth
 - Try to run your tests with all fields populated - null fields can only be checked with static analysis
 - If you have a generalised field, try to test with an instance of every type it may hold 
 - Collection interfaces - like List for example - do not implement `Serializable`, but most implementations do
-- An empty ArrayList<Anything> is equal to an empty ArrayList<AnythingElse> because of type erasure 
+- An empty ArrayList\<Anything> is equal to an empty ArrayList\<AnythingElse> because of type erasure 
  
  
 # Status

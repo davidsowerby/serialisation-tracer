@@ -257,10 +257,21 @@ class SerializationTracer {
         val genericType = field.genericType
         if (genericType != null && genericType is ParameterizedType) {
             genericType.actualTypeArguments.forEach { t ->
-                if (Serializable::class.java.isAssignableFrom(t as Class<*>)) {
-                    buf.append(" ${t.simpleName} is Serializable.")
+
+                var isSerializable: Boolean
+
+                try {
+                    isSerializable = (Serializable::class.java.isAssignableFrom(t as Class<*>))
+                } catch (cce: ClassCastException) {
+                    isSerializable = false // not a class, so cannot be Serializable - typically it is a wildcard
+                }
+
+                val simpleTypeName = t.typeName.substring(t.typeName.lastIndexOf(".") + 1)
+
+                if (isSerializable) {
+                    buf.append(" $simpleTypeName is Serializable.")
                 } else {
-                    buf.append(" ${t.simpleName} is NOT Serializable.")
+                    buf.append(" $simpleTypeName is NOT Serializable.")
                     outcome = staticFail(emptyCollection)
                 }
             }

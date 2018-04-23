@@ -2,6 +2,7 @@ package uk.q3c.util.serial.tracer
 
 import org.amshove.kluent.shouldBe
 import org.amshove.kluent.shouldEqual
+import org.amshove.kluent.shouldThrow
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.given
 import org.jetbrains.spek.api.dsl.it
@@ -17,8 +18,14 @@ import java.io.Serializable
 object TracerTest : Spek({
 
     given("a standard test object with most single level cases covered") {
-        val standardTestObject = StandardTestObject()
-        val tracer = SerializationTracer()
+        lateinit var standardTestObject: StandardTestObject
+        lateinit var tracer: SerializationTracer
+
+        beforeEachTest {
+            standardTestObject = StandardTestObject()
+            tracer = SerializationTracer()
+        }
+
 
         on("round trip serialisation") {
             tracer.trace(standardTestObject)
@@ -72,6 +79,26 @@ object TracerTest : Spek({
 
             }
         }
+
+        on("using shouldNotContain on object with a failure") {
+            val testObject1 = TestObject1()
+            tracer.trace(testObject1)
+            val result = { tracer.shouldNotHaveAny(anyFailure) }
+
+            it("should throw assertion error") {
+                result.shouldThrow(AssertionError::class)
+            }
+        }
+
+        on("using shouldNotFail on object with a failure") {
+            val testObject1 = TestObject1()
+            tracer.trace(testObject1)
+            val result = { tracer.shouldNotHaveAnyFailures() }
+
+            it("should throw assertion error") {
+                result.shouldThrow(AssertionError::class)
+            }
+        }
     }
 
 })
@@ -101,6 +128,9 @@ private class StandardTestObject(
 
 
 ) : Serializable
+
+private class TestObject1(val serializableObject: SerializableObject = SerializableObject(),
+                          val nonSerializableObject: NonSerializableObject = NonSerializableObject())
 
 class SerializableObject(val value: Int = 2) : Serializable
 class NonSerializableObject(val value: Int = 3)

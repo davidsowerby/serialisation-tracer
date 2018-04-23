@@ -21,22 +21,42 @@ class SerializationTracer {
     fun trace(target: Any) {
         results = mutableMapOf()
         processedObjects = mutableListOf()
-
         processInitialValue(target)
-
     }
 
-    fun assert(target: Any) {
-        trace(target)
+    /**
+     * Throws [AssertionError] if any of the [outcomes] are present in [results]
+     */
+    fun shouldNotHaveAny(vararg outcomes: SerializationOutcome) {
+        val oc = setOf(*outcomes)
+        shouldNotHaveAny(oc)
+    }
+
+    /**
+     * Throws [AssertionError] if any of the [outcomes] are present in [results]
+     */
+    fun shouldNotHaveAny(outcomes: Set<SerializationOutcome>) {
         results.forEach({ (k, v) ->
-            if (v.outcome == FAIL) {
-                println(results(FAIL))
+            if (outcomes.contains(v.outcome)) {
+                println(results(outcomes))
                 throw AssertionError("One or more serialisations failed")
             }
         })
     }
 
+    /**
+     * Throws [AssertionError] if any of the outcomes defined by [anyFailure] are present in [results]
+     */
+    fun shouldNotHaveAnyFailures() {
+        shouldNotHaveAny(anyFailure)
+    }
+
     fun results(vararg outcomes: SerializationOutcome): String {
+        val oc: Set<SerializationOutcome> = setOf(*outcomes)
+        return results(oc)
+    }
+
+    fun results(outcomes: Set<SerializationOutcome>): String {
         val buf = StringBuilder()
         results.forEach({ (k, v) ->
             if (outcomes.contains(v.outcome)) {
@@ -44,6 +64,18 @@ class SerializationTracer {
             }
         })
         return buf.toString()
+    }
+
+    fun hasNoFailures(): Boolean {
+        return outcomes(anyFailure).isEmpty()
+    }
+
+    fun hasNo(vararg outcomes: SerializationOutcome): Boolean {
+        return outcomes(*outcomes).isEmpty()
+    }
+
+    fun hasNo(outcomes: Set<SerializationOutcome>): Boolean {
+        return outcomes(outcomes).isEmpty()
     }
 
     fun resultsAll(): String {
@@ -56,6 +88,10 @@ class SerializationTracer {
      * Returns [results] filtered for [outcomes]
      */
     fun outcomes(vararg outcomes: SerializationOutcome): Map<String, SerializationResult> {
+        return results.filter({ (k, v) -> outcomes.contains(v.outcome) })
+    }
+
+    fun outcomes(outcomes: Set<SerializationOutcome>): Map<String, SerializationResult> {
         return results.filter({ (k, v) -> outcomes.contains(v.outcome) })
     }
 
@@ -237,6 +273,8 @@ class SerializationTracer {
 enum class SerializationOutcome {
     PASS, FAIL, TRANSIENT, NULL_PASSED_STATIC_ANALYSIS, STATIC_FIELD, NULL_FAILED_STATIC_ANALYSIS, EMPTY_PASSED_STATIC_ANALYSIS, EMPTY_FAILED_STATIC_ANALYSIS
 }
+
+val anyFailure: Set<SerializationOutcome> = setOf(FAIL, NULL_FAILED_STATIC_ANALYSIS, EMPTY_FAILED_STATIC_ANALYSIS)
 
 data class SerializationResult(val outcome: SerializationOutcome, val info: String = "")
 data class TraceOutcome(val path: String, val outcome: SerializationOutcome)

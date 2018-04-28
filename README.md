@@ -24,7 +24,7 @@ There are a number of methods available to query the output, including methods w
 ### Gradle
 
 ```
-compile 'uk.q3c.util:serialisation-tracer:0.1.0.0'
+compile 'uk.q3c.util:serialisation-tracer:x.x.x.x'
 ```
 
 ### Maven
@@ -32,7 +32,7 @@ compile 'uk.q3c.util:serialisation-tracer:0.1.0.0'
 <dependency>
   <groupId>uk.q3c.util</groupId>
   <artifactId>serialisation-tracer</artifactId>
-  <version>0.1.0.0</version>
+  <version>x.x.x.x</version>
   <type>pom</type>
 </dependency>
 

@@ -38,8 +38,8 @@ class SerializationTracer {
     fun shouldNotHaveAny(outcomes: Set<SerializationOutcome>) {
         results.forEach({ (k, v) ->
             if (outcomes.contains(v.outcome)) {
-                println(results(outcomes))
-                throw AssertionError("One or more serialisations failed")
+                val resultString = results(outcomes)
+                throw AssertionError("One or more serialisations failed: \n $resultString")
             }
         })
     }

@@ -2,13 +2,14 @@
 
 [ ![Download](https://api.bintray.com/packages/dsowerby/maven/serialisation-tracer/images/download.svg) ](https://bintray.com/dsowerby/maven/serialisation-tracer/_latestVersion)
 
-When you try to serialise a fairly complex object graph, it is not unusual to get `SerializationException`s which can be really hard to track down.
+When you try to serialise a fairly complex object graph, it is common to get unexpected `NotSerializableException`s - and these can be really hard to track down.
 
-This utility provides an output which identifies the exact source of a Serialization failure, for example:
+This utility provides an output which identifies the exact source(s) of a Serialization failure, for example:
 
-> StandardTestObject.arrayListOfNonSerializableObject -> SerializationResult(outcome=FAIL, info=java.io.NotSerializableException: uk.q3c.util.serial.tracer.NonSerializableObject) 
+> DefaultSubPagePanel.option.optionCache.cache.localCache.segments -> SerializationResult(outcome=FAIL, info=java.io.NotSerializableException: com.google.common.cache.LocalCache$AccessQueue)
+  DefaultSubPagePanel.option.optionCache.cache.localCache.removalNotificationQueue -> SerializationResult(outcome=FAIL, info=com.google.common.cache.LocalCache$2 cannot be cast to java.io.Serializable)
 
-In this case the culprit is the field *arrayListOfNonSerializableObject* in *StandardTestObject*.  With such a trivial object graph, this is not particularly helpful, but this object 'path' extends to whatever depth your object graph goes to.
+In this case example, it looks like the solution involves the cache itself, but whatever the solution, you have some clear information to work with. 
 
 
 Strangely, there do not seem to be any tools around to help - so either I just failed to find one, and this library has re-invented a wheel - or this could be a really useful utility!

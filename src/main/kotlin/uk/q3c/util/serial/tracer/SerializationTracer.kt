@@ -39,7 +39,7 @@ class SerializationTracer {
         results.forEach({ (k, v) ->
             if (outcomes.contains(v.outcome)) {
                 val resultString = results(outcomes)
-                throw AssertionError("One or more serialisations failed: \n $resultString")
+                throw AssertionError("One or more serialisations failed: \n$resultString")
             }
         })
     }

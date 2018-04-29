@@ -20,7 +20,7 @@ apply from: 'gradle/spek-test.gradle'
 
 kaytee{
     version {
-      number = '0.3.0.0'
+      number = '0.3.1.0'
     }
 }
 

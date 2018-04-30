@@ -1,5 +1,5 @@
 buildscript {
-    ext.kotlin_version = '1.2.40'
+    ext.kotlin_version = '1.2.41'
     ext.kaytee_plugin_version = "0.20.1.0"
 
     repositories {
@@ -20,8 +20,12 @@ apply from: 'gradle/spek-test.gradle'
 
 kaytee{
     version {
-      number = '0.3.1.0'
+      number = '0.3.1.1'
     }
+}
+
+bintray {
+    user = 'dsowerby'
 }
 
 repositories {

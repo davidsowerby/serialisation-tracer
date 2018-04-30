@@ -1,5 +1,6 @@
 package uk.q3c.util.serial.tracer
 
+import org.apache.commons.lang3.SerializationException
 import org.apache.commons.lang3.SerializationUtils
 import org.apache.commons.lang3.reflect.FieldUtils
 import uk.q3c.util.serial.tracer.SerializationOutcome.*
@@ -36,7 +37,7 @@ class SerializationTracer {
      * Throws [AssertionError] if any of the [outcomes] are present in [results]
      */
     fun shouldNotHaveAny(outcomes: Set<SerializationOutcome>) {
-        results.forEach({ (k, v) ->
+        results.forEach({ (_, v) ->
             if (outcomes.contains(v.outcome)) {
                 val resultString = results(outcomes)
                 throw AssertionError("One or more serialisations failed: \n$resultString")
@@ -88,11 +89,11 @@ class SerializationTracer {
      * Returns [results] filtered for [outcomes]
      */
     fun outcomes(vararg outcomes: SerializationOutcome): Map<String, SerializationResult> {
-        return results.filter({ (k, v) -> outcomes.contains(v.outcome) })
+        return results.filter({ (_, v) -> outcomes.contains(v.outcome) })
     }
 
     fun outcomes(outcomes: Set<SerializationOutcome>): Map<String, SerializationResult> {
-        return results.filter({ (k, v) -> outcomes.contains(v.outcome) })
+        return results.filter({ (_, v) -> outcomes.contains(v.outcome) })
     }
 
     private fun processInitialValue(x: Any) {
@@ -101,13 +102,13 @@ class SerializationTracer {
         drilldown(x.javaClass.simpleName, x)
     }
 
-    private fun drilldown(fieldPath: String, fieldValue: Any) {
-        val targetClass = fieldValue.javaClass
+    private fun drilldown(fieldPath: String, target: Any) {
+        val targetClass = target.javaClass
         val fields = FieldUtils.getAllFields(targetClass)
 
         for (field in fields) {
-            if (!excluded(fieldPath, field, fieldValue)) {
-                processFieldValue("$fieldPath.${field.name}", fieldValue(field, fieldValue), field)
+            if (!excluded(fieldPath, field, target)) {
+                processFieldValue("$fieldPath.${field.name}", fieldValue(field, target), field)
             }
         }
     }
@@ -156,7 +157,21 @@ class SerializationTracer {
         var result: SerializationResult
         try {
             val output = SerializationUtils.serialize(fieldValue as Serializable)
-            SerializationUtils.deserialize<Any>(output)
+            try {
+                SerializationUtils.deserialize<Any>(output)
+            } catch (cce: SerializationException) {
+                if (cce.cause is ClassCastException) {
+                    val cause = cce.cause as ClassCastException
+                    if (cause.message != null) {
+                        val msg = cause.message as String
+                        if (msg.contains("cannot assign instance of java.lang.invoke.SerializedLambda")) {
+                            result = SerializationResult(PASS, "Lambda")
+                            return result
+                        }
+                    }
+
+                }
+            }
             result = if (fieldValue is Collection<*> && fieldValue.isEmpty()) {
                 if (field != null) {
                     emptyCollectionStaticAnalysis(field, fieldValue)
@@ -167,6 +182,7 @@ class SerializationTracer {
                 SerializationResult(PASS)
             }
         } catch (e: Exception) {
+            e.printStackTrace()
             result = SerializationResult(FAIL, e.message ?: "")
         }
         results[fieldPath] = result
@@ -184,8 +200,8 @@ class SerializationTracer {
         }
     }
 
-    private fun excluded(fieldPath: String, field: Field, fieldValue: Any): Boolean {
-        return fieldIsTransient(fieldPath, field) || fieldIsStatic(fieldPath, field) || fieldIsNull(fieldPath, field, fieldValue)
+    private fun excluded(fieldPath: String, field: Field, target: Any): Boolean {
+        return fieldIsTransient(fieldPath, field) || fieldIsStatic(fieldPath, field) || fieldIsNull(fieldPath, field, target) || fieldIsLambda(field, target)
     }
 
     private fun fieldIsTransient(fieldPath: String, field: Field): Boolean {
@@ -213,6 +229,21 @@ class SerializationTracer {
         }
         return false
     }
+
+    private fun fieldIsLambda(field: Field, target: Any): Boolean {
+        field.isAccessible = true
+        val value = field.get(target)
+        return if (value == null) {
+            false
+        } else {
+            valueIsLambda(value)
+        }
+    }
+
+    private fun valueIsLambda(value: Any): Boolean {
+        return value.javaClass.name.contains(ignoreCase = true, other = "\$lambda")
+    }
+
 
     private fun staticPass(isEmptyCollection: Boolean): SerializationOutcome {
         return if (isEmptyCollection) {

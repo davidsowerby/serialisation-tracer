@@ -9,8 +9,11 @@ import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
 import uk.q3c.util.serial.tracer.SerializationOutcome.*
 import java.io.ByteArrayOutputStream
+import java.io.IOException
+import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.io.Serializable
+
 
 /**
  * Created by David Sowerby on 21 Apr 2018
@@ -77,6 +80,10 @@ object TracerTest : Spek({
                 tracer.results["StandardTestObject.nullListOfNonSerializableObject"]?.outcome.shouldBe(NULL_FAILED_STATIC_ANALYSIS)
                 tracer.results["StandardTestObject.nullListOfNonSerializableObject"]?.info.shouldEqual("List is NOT Serializable. NonSerializableObject is NOT Serializable.")
 
+                tracer.results["StandardTestObject.classWithSerializedLambda"]?.outcome.shouldBe(PASS)
+                tracer.results["StandardTestObject.classWithSerializedLambda"]?.info.shouldEqual("Lambda")
+
+
             }
         }
 
@@ -124,7 +131,9 @@ private class StandardTestObject(
 
         val listOfNonSerializableObject: List<NonSerializableObject> = listOf(NonSerializableObject(8)),
         val emptyListOfNonSerializableObject: List<NonSerializableObject> = listOf(),
-        val nullListOfNonSerializableObject: List<NonSerializableObject>? = null 
+        val nullListOfNonSerializableObject: List<NonSerializableObject>? = null,
+
+        val classWithSerializedLambda: ClassWithSerializedLambda = ClassWithSerializedLambda()
 
 
 ) : Serializable
@@ -134,6 +143,20 @@ private class TestObject1(val serializableObject: SerializableObject = Serializa
 
 class SerializableObject(val value: Int = 2) : Serializable
 class NonSerializableObject(val value: Int = 3)
+
+class ClassWithSerializedLambda : Serializable {
+    val int = 3
+    @Transient
+    val sz: String = "?"
+
+
+    @Throws(ClassNotFoundException::class, IOException::class)
+    private fun readObject(inputStream: ObjectInputStream) {
+        inputStream.defaultReadObject()
+        throw ClassCastException("cannot assign instance of java.lang.invoke.SerializedLambda to field com.vaadin.ui.AbstractOrderedLayout.rpc")
+    }
+
+}
 
 
 private fun serialise(obj: Any?) {

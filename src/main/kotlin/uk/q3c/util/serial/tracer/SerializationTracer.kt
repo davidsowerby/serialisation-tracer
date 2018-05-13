@@ -2,18 +2,24 @@ package uk.q3c.util.serial.tracer
 
 import org.apache.commons.lang3.SerializationException
 import org.apache.commons.lang3.SerializationUtils
+import org.apache.commons.lang3.exception.ExceptionUtils
 import org.apache.commons.lang3.reflect.FieldUtils
+import org.slf4j.LoggerFactory
 import uk.q3c.util.serial.tracer.SerializationOutcome.*
+import java.io.PrintWriter
 import java.io.Serializable
+import java.io.StringWriter
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import java.lang.reflect.ParameterizedType
+
 
 /**
  * Created by David Sowerby on 19 Apr 2018
  */
 class SerializationTracer {
     private var processedObjects: MutableList<Any> = mutableListOf()
+    private val log = LoggerFactory.getLogger(this.javaClass.name)
 
 
     var results: MutableMap<String, SerializationResult> = mutableMapOf()
@@ -115,10 +121,13 @@ class SerializationTracer {
 
     fun processFieldValue(fieldPath: String, fieldValue: Any, field: Field) {
         if (isProcessed(fieldValue)) {
+            log.info("${field.name} is a duplicate, ignored")
             // duplicate - what should be done here?
         } else {
+            log.debug("adding ${field.name} to processed list")
             addToProcessedList(fieldValue)// add early, object could refer to itself
 
+            log.debug("trying serialisation for ${field.name}")
             trySerialisation(fieldPath, fieldValue, field)
             drilldown(fieldPath, fieldValue)
         }
@@ -153,26 +162,38 @@ class SerializationTracer {
         return x::class.javaPrimitiveType != null
     }
 
-    private fun trySerialisation(fieldPath: String, fieldValue: Any, field: Field? = null): SerializationResult {
-        var result: SerializationResult
+    private fun trySerialisation(fieldPath: String, fieldValue: Any, field: Field? = null) {
         try {
+            val fieldName = if (field == null) {
+                "unnamed"
+            } else {
+                field.name
+            }
+            log.debug("serialising field $fieldName of type ${fieldValue.javaClass}")
             val output = SerializationUtils.serialize(fieldValue as Serializable)
             try {
+                log.debug("deserialising field $fieldName of type ${fieldValue.javaClass}")
                 SerializationUtils.deserialize<Any>(output)
-            } catch (cce: SerializationException) {
-                if (cce.cause is ClassCastException) {
-                    val cause = cce.cause as ClassCastException
-                    if (cause.message != null) {
-                        val msg = cause.message as String
-                        if (msg.contains("cannot assign instance of java.lang.invoke.SerializedLambda")) {
-                            result = SerializationResult(PASS, "Lambda")
-                            return result
-                        }
-                    }
-
+            } catch (se: SerializationException) {
+                log.debug("caught SerializationException during deserialisation, field name: $fieldName, with message: ${se.message}")
+                val rootCause = ExceptionUtils.getRootCause(se)
+                if (causedBySerializedLambda(rootCause)) {
+                    results[fieldPath] = SerializationResult(PASS, "Lambda")
+                } else {
+                    results[fieldPath] = SerializationResult(FAIL, se.message ?: "")
                 }
+                return
+            } catch (cce: ClassCastException) {
+                log.debug("caught ClassCastException during deserialisation, field name: $fieldName, with message: ${cce.message}")
+                if (causedBySerializedLambda(cce)) {
+                    results[fieldPath] = SerializationResult(PASS, "Lambda")
+                } else {
+                    results[fieldPath] = SerializationResult(FAIL, cce.message ?: "")
+                }
+                return
             }
-            result = if (fieldValue is Collection<*> && fieldValue.isEmpty()) {
+
+            val result = if (fieldValue is Collection<*> && fieldValue.isEmpty()) {
                 if (field != null) {
                     emptyCollectionStaticAnalysis(field, fieldValue)
                 } else {
@@ -181,12 +202,30 @@ class SerializationTracer {
             } else {
                 SerializationResult(PASS)
             }
+            results[fieldPath] = result
+            return
         } catch (e: Exception) {
-            e.printStackTrace()
-            result = SerializationResult(FAIL, e.message ?: "")
+            log.debug("caught Exception during deserialisation, ${e.message}, exception class: ${e.javaClass}")
+            results[fieldPath] = SerializationResult(FAIL, e.message ?: "")
+            return
         }
-        results[fieldPath] = result
-        return result
+    }
+
+    private fun causedBySerializedLambda(rootCause: Throwable): Boolean {
+        return if (rootCause is ClassCastException) {
+            val stacktrace = stacktraceToString(rootCause)
+            stacktrace.contains("SerializedLambda")
+        } else {
+            false
+        }
+    }
+
+
+    private fun stacktraceToString(e: Exception): String {
+        val sw = StringWriter()
+        val pw = PrintWriter(sw, true)
+        e.printStackTrace(pw)
+        return sw.buffer.toString()
     }
 
 

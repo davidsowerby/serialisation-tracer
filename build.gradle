@@ -20,9 +20,10 @@ apply from: 'gradle/spek-test.gradle'
 
 kaytee{
     version {
-      number = '0.4.0.0'
+      number = '0.5.0.0'
     }
 }
+ext.slf4jVersion = '1.7.6'
 
 bintray {
     user = 'dsowerby'
@@ -31,12 +32,23 @@ bintray {
 repositories {
     jcenter()
     mavenCentral()
+    maven {
+        url {
+            "http://maven.vaadin.com/vaadin-addons"  // we are using Krail for testing
+        }
+    }
 }
 
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     compile "org.apache.commons:commons-lang3:3.3.2"
+
+    //logging
+    compile 'org.slf4j:slf4j-api:' + slf4jVersion
+    compile 'ch.qos.logback:logback-classic:1.1.2'
+    compile 'ch.qos.logback:logback-core:1.1.2'
+
 }
 
 

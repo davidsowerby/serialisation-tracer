@@ -1,6 +1,6 @@
 # Serialisation Tracer
 
-[ ![Download](https://api.bintray.com/packages/dsowerby/maven/serialisation-tracer/images/download.svg) ](https://bintray.com/dsowerby/maven/serialisation-tracer/_latestVersion)
+[ ![Download](https://api.bintray.com/packages/dsowerby/maven/serialization-tracer/images/download.svg) ](https://bintray.com/dsowerby/maven/serialization-tracer/_latestVersion)
 
 When you try to serialise a fairly complex object graph, it is common to get unexpected `NotSerializableException`s - and these can be really hard to track down.
 
@@ -25,14 +25,14 @@ There are a number of methods available to query the output, including methods w
 ### Gradle
 
 ```
-compile 'uk.q3c.util:serialisation-tracer:x.x.x.x'
+compile 'uk.q3c.util:serialization-tracer:x.x.x.x'
 ```
 
 ### Maven
 ```
 <dependency>
   <groupId>uk.q3c.util</groupId>
-  <artifactId>serialisation-tracer</artifactId>
+  <artifactId>serialization-tracer</artifactId>
   <version>x.x.x.x</version>
   <type>pom</type>
 </dependency>

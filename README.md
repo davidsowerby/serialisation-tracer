@@ -20,6 +20,10 @@ This utility uses dynamic analysis (by testing field values) when they are prese
 
 There are a number of methods available to query the output, including methods which generate an `AssertionError` to use with test frameworks.
 
+# Library name
+
+This library was renamed from *serialisation-tracer* to *serialization-tracer* - use of the original spelling should be ignored
+
 ## Download
 
 ### Gradle

@@ -20,7 +20,7 @@ apply from: 'gradle/spek-test.gradle'
 
 kaytee{
     version {
-      number = '0.6.0.1'
+      number = '0.6.0.2'
     }
 }
 ext.slf4jVersion = '1.7.6'

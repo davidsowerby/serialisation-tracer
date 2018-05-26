@@ -25,10 +25,11 @@ class SerializationTracer {
     var results: MutableMap<String, SerializationResult> = mutableMapOf()
         private set
 
-    fun trace(target: Any) {
+    fun trace(target: Any): SerializationTracer {
         results = mutableMapOf()
         processedObjects = mutableListOf()
         processInitialValue(target)
+        return this
     }
 
     /**
@@ -58,6 +59,10 @@ class SerializationTracer {
         shouldNotHaveAny(anyFailure)
     }
 
+    fun shouldNotHaveAnyDynamicFailures() {
+        shouldNotHaveAny(FAIL)
+    }
+
     fun results(vararg outcomes: SerializationOutcome): String {
         val oc: Set<SerializationOutcome> = setOf(*outcomes)
         return results(oc)
@@ -75,6 +80,10 @@ class SerializationTracer {
 
     fun hasNoFailures(): Boolean {
         return outcomes(anyFailure).isEmpty()
+    }
+
+    fun hasNoDynamicFailures(): Boolean {
+        return outcomes(FAIL).isEmpty()
     }
 
     fun hasNo(vararg outcomes: SerializationOutcome): Boolean {
@@ -206,6 +215,7 @@ class SerializationTracer {
             return
         } catch (e: Exception) {
             log.debug("caught Exception during deserialisation, ${e.message}, exception class: ${e.javaClass}")
+            log.debug(ExceptionUtils.getStackTrace(e))
             results[fieldPath] = SerializationResult(FAIL, e.message ?: "")
             return
         }

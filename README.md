@@ -73,8 +73,7 @@ Construct the object to be tested using your normal methods (for example, if you
 To invoke:
 
 ```java
-SerializationTracer tracer = new SerializationTracer();
-tracer.trace(myObject);
+new SerializationTracer().trace(myObject);
 ```
 
 ## Output
@@ -104,23 +103,30 @@ It is expected that this utility would be used primarily in testing, and therefo
 For JUnit and other frameworks which expect an `AssertionError` to be thrown if a trace does not meet the required conditions use one of the methods:
 
 ```java
-// when
-SerializationTracer tracer = new SerializationTracer();
-tracer.trace(myObject);
 
-// then
-tracer.shouldNotHaveAnyFailures()
+new SerializationTracer().trace(myObject).shouldNotHaveAnyFailures();
+
+
 ```
 
 will throw an `AssertionError` if any object in the graph produces a result of **FAIL, NULL_FAILED_STATIC_ANALYSIS, EMPTY_FAILED_STATIC_ANALYSIS**
 
-```java
-// when
-SerializationTracer tracer = new SerializationTracer();
-tracer.trace(myObject);
 
-// then
-tracer.shouldNotHaveAny( ... )
+```java
+
+new SerializationTracer().trace(myObject).shouldNotHaveAnyDynamicFailures();
+
+
+```
+
+will throw an `AssertionError` if any object in the graph produces a result of **FAIL**
+
+
+
+```java
+
+new SerializationTracer().trace(myObject).shouldNotHaveAny( ... )
+
 ``` 
 
 Allows you to specify exactly which outcomes should cause an `AssertionError` to be thrown
@@ -140,7 +146,7 @@ Spock expects a 'false' to be returned for a test failure.  Use the `hasNo` meth
  
 # Status
 
-Test coverage is not as comprehensive as it should be, but this utility has been used as intended.
+Test coverage is not as comprehensive as it should be, but this utility is used regularly.
 
 # Contributions
 
